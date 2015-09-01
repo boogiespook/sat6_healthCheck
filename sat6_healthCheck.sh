@@ -20,10 +20,11 @@ green=`tput setaf 2`
 orange=`tput setaf 3`
 reset=`tput sgr0`
 hostname=$(hostname -f)
+facter=$(which facter 2> /dev/null)
 
 MPSTAT=`which mpstat 2> /dev/null`
 a=$?
-if [ $a != 0 ]
+if [[ $a != 0 ]]
 then
 while true; do
     read -p "Do you wish to install sysstat ?" yn
@@ -151,7 +152,7 @@ echo -e "
 "
 # Connection to cdn.redhat.com
 echo " + Checking connection to cdn.redhat.com"
-ms=$(ping -c2 cdn.redhat.com | awk -F"/" '/^rtt/ {print $5}')
+ms=$(ping -c5 cdn.redhat.com | awk -F"/" '/^rtt/ {print $5}')
 echo " -  Complete.  Average was $ms ms"
 }
 
@@ -169,7 +170,7 @@ fi
 function checkService {
 service=$1
 echo " - Checking status of ${service}"
-if (( $release >= 6 ))
+if (( $release >= 7 ))
   then
      ## Is it running?
      running=$(systemctl is-active ${service} 2> /dev/null)
