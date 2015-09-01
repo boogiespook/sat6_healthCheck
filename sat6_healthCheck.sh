@@ -19,6 +19,7 @@ red=`tput setaf 1`
 green=`tput setaf 2`
 orange=`tput setaf 3`
 reset=`tput sgr0`
+hostname=$(hostname -f)
 
 MPSTAT=`which mpstat 2> /dev/null`
 a=$?
@@ -105,10 +106,16 @@ then
    TYPE="Sat6"
 else
   # Satellite Capsule?
-  printOK "This sytem is registered to $upstream which makes it a capsule server"
-  TYPE="Capsule"
-  echo "** This script only currently runs on Satellite servers not capsules.  A capsule version is currently being writted **"
-  echo 3
+  #printOK "This sytem is registered to $upstream which makes it a capsule server"
+  if [[ $upstream == $hostname ]]
+  then
+    echo -e "This system is registered to itself ($hostname)"
+    TYPE="Sat6"
+  else
+    TYPE="Capsule"
+    echo "** This script only currently runs on Satellite servers not capsules.  A capsule version is currently being writted **"
+    echo 3
+  fi
 fi
 }
 
