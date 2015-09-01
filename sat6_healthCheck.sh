@@ -247,13 +247,13 @@ echo
 # Check pulp partition
 if (( $(df | grep -c pulp) < 1 ))
 then
-    printError "/var/lib/pulp should be mounted on a separate partition"
+    printWarning "/var/lib/pulp should be mounted on a separate partition"
 fi
 
 # Check mongo partition
 if (( $(df | grep -c mongo) < 1 ))
 then
-    printError "/var/lib/mongodb should be mounted on a separate partition"
+    printWarning "/var/lib/mongodb should be mounted on a separate partition"
 fi
 
 
