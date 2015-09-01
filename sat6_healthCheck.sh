@@ -4,6 +4,10 @@
 ## Satellite 6 Health Check ##
 ##############################
 
+######################
+## Work In Progress ##
+######################
+
 if [ "$EUID" -ne 0 ]
   then echo "Please run this script as root"
   exit 1
@@ -221,8 +225,15 @@ echo
 df -Pkh | grep -v 'Filesystem' > $TMPDIR/df.status
 while read DISK
 do
-        LINE=`echo $DISK | awk '{print $1,"\tMounted at ",$6,"\tis ",$5," used","\twith",$4," free space"}'`
+        LINE=$(echo $DISK | awk '{print $1,"\tMounted at ",$6,"\tis ",$5," used","\twith",$4," free space"}')
+        mount=$(echo $DISK | awk '{print $1}')
+        used=$(echo $DISK | awk '{print $5}' | rev | cut -c 2- | rev)
         echo -e $LINE
+        if (( $used > 85 ))
+        then
+	  printWarning "$mount has used more than 85% (${used}%).  Could be worth adding more storage?"
+        fi
+
 done < $TMPDIR/df.status
 echo
 # Check pulp partition
@@ -287,6 +298,14 @@ echo -e "
 #######################################
 ## Checking Satellite Configuration  ##
 #######################################"
+
+## Organisations
+hammer --csv --csv-separator=" " organization list| sort -n | grep -v "Id " > $TMPDIR/orgs
+if (( $(grep -c "Default_Organization" $TMPDIR/orgs) > 0 ))
+then
+  printWarning "The Default_Organization is still set.  Best to remove this in a production environment"
+fi
+
 
 ## Location List
 echo
