@@ -6,6 +6,11 @@
 
 ######################
 ## Work In Progress ##
+##
+## ToDo:
+## - Add Sat6->Capsule f/w check
+##
+##
 ######################
 
 if [ "$EUID" -ne 0 ]
@@ -21,15 +26,36 @@ orange=`tput setaf 3`
 reset=`tput sgr0`
 hostname=$(hostname -f)
 facter=$(which facter 2> /dev/null)
+toInstall=""
 
-MPSTAT=`which mpstat 2> /dev/null`
+## Make sure the admin tools are available
+MPSTAT=$(which mpstat >/dev/null 2>&1)
 a=$?
 if [[ $a != 0 ]]
 then
+  toInstall="$toInstall sysstat" 
+fi
+
+nmap=$(which nmap >/dev/null 2>&1)
+a=$?
+if [[ $a != 0 ]]
+then
+  toInstall="$toInstall nmap" 
+fi
+
+nslookup=$(which nslookup >/dev/null 2>&1)
+a=$?
+if [[ $a != 0 ]]
+then
+  toInstall="$toInstall bind-utils" 
+fi
+
+if [[ $toInstall != "" ]]
+then
 while true; do
-    read -p "Do you wish to install sysstat ?" yn
+    read -p "Certain utilities are required.  Ok to install $toInstall ?  (y/n) : " yn
     case $yn in
-        [Yy]* ) yum -y install sysstat; break;;
+        [Yy]* ) yum -y install $toInstall; break;;
         [Nn]* ) echo " OK - health check stopped"; exit;;
         * ) echo "Please answer y or n.";;
     esac
@@ -65,20 +91,53 @@ release=$(awk '{print $7}' /etc/redhat-release | cut -c1)
 ## Functions ##
 ###############
 
+
 function printOK {
-  echo -e "${green}[OK]\t\t $1 ${reset}"
+  echo -e "${green}[OK]\t\t $1 ${reset}" | tee -a $TMPDIR/success
 }
 
 function printWarning {
-  echo -e "${orange}[WARNING]\t $1 ${reset}" | tee -a $TMPDIR/warnings
   ((warnings=warnings+1))
+  echo -e "${orange}[WARNING] $warnings\t $1 ${reset}" | tee -a $TMPDIR/warnings
 }
 
 function printError {
-  echo -e "${red}[ERROR]\t $1 ${reset}" | tee -a $TMPDIR/errors
     ((errors=errors+1))
-
+  echo -e "${red}[ERROR] $errors\t $1 ${reset}" | tee -a $TMPDIR/errors
 }
+
+function checkDNS {
+echo -e "
+##################
+## Checking DNS ##
+##################"
+host=$(hostname -f)
+forwardDNS=$(nslookup $host |  grep ^Name -A1 | awk '/^Address:/ {print $2}')
+if [[ ! -z $forwardDNS ]]
+then
+  printOK "Forward DNS resolves to $forwardDNS"
+else
+  printError "Forward DNS does not resolve"
+
+fi
+
+reverseDNS=$(nslookup $forwardDNS | awk '/name/ {print $NF}' | rev | cut -c2- | rev)
+if [[ ! -z $reverseDNS ]]
+then
+  printOK "Reverse DNS resolves to $reverseDNS"
+else
+  printError "Reverse DNS not resolvable for $forwardDNS"
+fi
+
+if [[ $host == $reverseDNS ]]
+then
+  printOK "Foreward and reverse DNS match"
+else
+  printError "Forward and reverse DNS do not match for $host / $reverseDNS"
+fi
+echo
+}
+
 
 function checkSubscriptions {
 # Check current subscriptions
@@ -295,7 +354,7 @@ while read line
       then
 	printOK "$port ($proto) has been opened"
       else
-	printWarning "$port ($proto) has been NOT been opened"
+	printError "$port ($proto) has been NOT been opened"
     fi
 done < $TMPDIR/iptables_required
 fi
@@ -342,6 +401,19 @@ do
   echo " - Details for capsule \"${name}\" are in $TMPDIR/capsule_${name}"
   echo -ne "\tFeatures: "
   awk '/Features: / {for (i=2; i<NF; i++) printf $i " "; print $NF}' $TMPDIR/capsule_${name} 
+  echo -e " + Checking network connectivity between $(hostname) and ${fqdn}"
+  nmap -p T:443,5647,5646,8443,9090 ${fqdn} | grep "^[0-9]" > $TMPDIR/capsule_firewall_${name}
+  while read nmap_line
+  do
+  port=$(echo $nmap_line | awk '{print $1}')
+  status=$(echo $nmap_line | awk '{print $2}')
+  if [[ $status == "closed" ]]
+  then
+    printWarning "Port $port is closed on $fqdn"
+  else
+    printOK "Port $port is not closed on $fqdn"  
+  fi
+  done < $TMPDIR/capsule_firewall_${name}
 done < $TMPDIR/capsules
 
 ## Subnets
@@ -357,6 +429,11 @@ do
 done < $TMPDIR/subnets
 }
 
+
+#################
+## MAIN SCRIPT ##
+#################
+
 checkGeneralSetup
 checkDisks
 checkNetworkConnection
@@ -367,6 +444,7 @@ echo -e "
 #######################
   Checking OS Services 
 #######################"
+checkDNS
 checkSELinux
 checkOSupdates
 for service in firewalld ntpd 
@@ -374,7 +452,6 @@ do
   checkService ${service}
 done
 checkFirewallRules
-
 echo -e "
 #######################################
   Checking Katello/Satellite Services 
