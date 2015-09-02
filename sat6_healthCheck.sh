@@ -5,11 +5,14 @@
 ##############################
 
 ######################
-## Work In Progress ##
+## Work In Progress 
 ##
 ## ToDo:
-## - Add Sat6->Capsule f/w check
 ##
+## - Add in remedial action for errors/warnings
+## - Check all firewall reqs
+## - Alter call depending on type (Sat6 or Capsule)
+## - Add check for disconnected Sat6
 ##
 ######################
 
@@ -28,7 +31,7 @@ hostname=$(hostname -f)
 facter=$(which facter 2> /dev/null)
 toInstall=""
 
-## Make sure the admin tools are available
+## Make sure the various admin tools are available
 MPSTAT=$(which mpstat >/dev/null 2>&1)
 a=$?
 if [[ $a != 0 ]]
@@ -91,7 +94,6 @@ release=$(awk '{print $7}' /etc/redhat-release | cut -c1)
 ## Functions ##
 ###############
 
-
 function printOK {
   echo -e "${green}[OK]\t\t $1 ${reset}" | tee -a $TMPDIR/success
 }
@@ -151,9 +153,9 @@ grep "^Repo Name" /tmp/sat6_check/repos
 sat6Version=$(awk '/Satellite/ {print $6}' /tmp/sat6_check/repos)
 if [[ -z $sat6Version ]]
  then
-  printWarning "Unable to ascertain a valid Satellite repository?"
+    printWarning "Unable to ascertain a valid Satellite repository?"
  else
-  printOK " -  Repository installed for Satellite version $sat6Version"
+    printOK " -  Repository installed for Satellite version $sat6Version"
 fi
 }
 
@@ -271,18 +273,6 @@ if (( $(wc -l $TMPDIR/updates | awk '{print $1}') > 2 ))
 fi
 }
 
-function getKatelloServiceList {
-katello-service status 2> /tmp/sat6_check/services > /dev/null 
-}
-
-function checkKatelloServices {
-echo -e " + Checking status of all katello services"
-for service in $(awk '/^Redirecting/ {print $NF}' $TMPDIR/services  | awk -F. '{print $1}')
-do
-  checkService ${service}
-done
-}
-
 function checkDisks {
 echo -e "
 ############################
@@ -314,7 +304,6 @@ if (( $(df | grep -c mongo) < 1 ))
 then
     printWarning "/var/lib/mongodb should be mounted on a separate partition"
 fi
-
 
 }
 
@@ -356,7 +345,7 @@ while read line
       else
 	printError "$port ($proto) has been NOT been opened"
     fi
-done < $TMPDIR/iptables_required
+  done < $TMPDIR/iptables_required
 fi
 }
 
@@ -405,14 +394,14 @@ do
   nmap -p T:443,5647,5646,8443,9090 ${fqdn} | grep "^[0-9]" > $TMPDIR/capsule_firewall_${name}
   while read nmap_line
   do
-  port=$(echo $nmap_line | awk '{print $1}')
-  status=$(echo $nmap_line | awk '{print $2}')
-  if [[ $status == "closed" ]]
-  then
-    printWarning "Port $port is closed on $fqdn"
-  else
-    printOK "Port $port is not closed on $fqdn"  
-  fi
+    port=$(echo $nmap_line | awk '{print $1}')
+    status=$(echo $nmap_line | awk '{print $2}')
+    if [[ $status == "closed" ]]
+    then
+      printWarning "Port $port is closed on $fqdn"
+    else
+      printOK "Port $port is not closed on $fqdn"  
+    fi
   done < $TMPDIR/capsule_firewall_${name}
 done < $TMPDIR/capsules
 
