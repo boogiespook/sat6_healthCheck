@@ -89,6 +89,7 @@ then
 fi
 mkdir -p $TMPDIR
 release=$(awk '{print $7}' /etc/redhat-release | cut -c1)
+touch $TMPDIR/remedialAction
 
 ###############
 ## Functions ##
@@ -106,6 +107,10 @@ function printWarning {
 function printError {
     ((errors=errors+1))
   echo -e "${red}[ERROR] $errors\t $1 ${reset}" | tee -a $TMPDIR/errors
+}
+
+function remedialAction {
+  echo -e "$1" | tee -a $TMPDIR/remedialAction
 }
 
 function checkDNS {
@@ -248,6 +253,7 @@ if (( $release >= 7 ))
 	  fi
        else
  	  printError "${service} is not running"
+ 	  remedialAction "systemctl start ${service}"
      fi
      
      ## Is it enabled?
@@ -257,6 +263,7 @@ if (( $release >= 7 ))
 	  printOK "${service} is enabled"
        else
 	 printWarning "${service} is not enabled to start on boot"
+	 remedialAction "systemctl enable ${service}"
      fi
   else
   echo "Do the above for RHEL6 + iptables"
@@ -481,7 +488,13 @@ else
   echo " + No errors"
   echo
 fi
-  
+
+if [[ ! -s $TMPDIR/remedialAction ]]
+then
+  echo " + Remedial Action:"
+  cat $TMPDIR/remedialAction
+fi
+
   
 exit
 
