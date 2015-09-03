@@ -395,10 +395,17 @@ while read line
 do
   id=$(echo $line | awk '{print $1}')
   location=$(echo $line | awk '{print $2}')
-  hammer location --output csv info --id=${id} > $TMPDIR/location_${location}
+  hammer --output csv location  info --id=${id} > $TMPDIR/location_${location}
   totalSubnets=$(tr ',' '\n' < $TMPDIR/location_${location}  | grep -c Subnets)
   echo "  + Details for location \"${location}\" are in $TMPDIR/location_${location}"
   ## Add subnets
+  echo "  - $totalSubnets Subnet(s) found for ${location}"
+  for subnet in $(tr ',' '\n' < $TMPDIR/location_${location}  | grep -n  Subnets | awk -F":" '{print $1}')
+  do
+    locationSubnet=$(tail -1 $TMPDIR/location_${location} | awk -F"," -v net=${subnet} '{print $net}')
+    echo "   - $locationSubnet"
+  done
+
 done < $TMPDIR/locations
 
 ## Capsules
