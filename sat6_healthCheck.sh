@@ -71,7 +71,7 @@ then
 Please do the following:
 mkdir ~/.hammer
 chmod 600 ~/.hammer
-echo << EOF >> /root.hammer/cli_config.yml
+echo << EOF >> /root/.hammer/cli_config.yml
   :foreman:
        :host: 'https://$(hostname -f)'
        :username: 'admin'
