@@ -114,11 +114,10 @@ function remedialAction {
 }
 
 function checkDNS {
+host=$1
 echo -e "
-##################
-## Checking DNS ##
-##################"
-host=$(hostname -f)
+## Checking DNS entries for $host"
+#host=$(hostname -f)
 forwardDNS=$(nslookup $host |  grep ^Name -A1 | awk '/^Address:/ {print $2}')
 if [[ ! -z $forwardDNS ]]
 then
@@ -203,7 +202,7 @@ echo -e "
 cpus=`lscpu | grep -e "^CPU(s):" | cut -f2 -d: | awk '{print $1}'`
 i=0
 
-echo " - CPU: %usr"
+echo " + CPU: %usr"
 echo "   ---------"
 while [ $i -lt $cpus ]
 do
@@ -266,6 +265,7 @@ if (( $release >= 7 ))
 	 remedialAction "systemctl enable ${service}"
      fi
   else
+  ## TO DO
   echo "Do the above for RHEL6 + iptables"
      ## iptables
 fi
@@ -400,19 +400,26 @@ do
   echo " - Details for capsule \"${name}\" are in $TMPDIR/capsule_${name}"
   echo -ne "\tFeatures: "
   awk '/Features: / {for (i=2; i<NF; i++) printf $i " "; print $NF}' $TMPDIR/capsule_${name} 
+  checkDNS ${fqdn}
   echo -e " + Checking network connectivity between $(hostname) and ${fqdn}"
-  nmap -p T:443,5647,5646,8443,9090 ${fqdn} | grep "^[0-9]" > $TMPDIR/capsule_firewall_${name}
-  while read nmap_line
-  do
-    port=$(echo $nmap_line | awk '{print $1}')
-    status=$(echo $nmap_line | awk '{print $2}')
-    if [[ $status == "closed" ]]
-    then
-      printWarning "Port $port is closed on $fqdn"
-    else
-      printOK "Port $port is not closed on $fqdn"  
-    fi
-  done < $TMPDIR/capsule_firewall_${name}
+  ping -c 1 ${fqdn} > /dev/null
+  if [[ $? -eq 0 ]]
+  then
+    nmap -p T:443,5647,5646,8443,9090 ${fqdn} | grep "^[0-9]" > $TMPDIR/capsule_firewall_${name}
+    while read nmap_line
+    do
+      port=$(echo $nmap_line | awk '{print $1}')
+      status=$(echo $nmap_line | awk '{print $2}')
+      if [[ $status == "closed" ]]
+      then
+	printWarning "Port $port is closed on $fqdn"
+      else
+	printOK "Port $port is open to $fqdn"  
+      fi
+    done < $TMPDIR/capsule_firewall_${name}
+  else
+    printError "$fqdn is not responding to ping?"
+  fi
 done < $TMPDIR/capsules
 
 ## Subnets
@@ -443,7 +450,7 @@ echo -e "
 #######################
   Checking OS Services 
 #######################"
-checkDNS
+checkDNS $(hostname)
 checkSELinux
 checkOSupdates
 for service in firewalld ntpd 
