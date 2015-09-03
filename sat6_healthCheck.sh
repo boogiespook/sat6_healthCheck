@@ -116,7 +116,7 @@ function remedialAction {
 function checkDNS {
 host=$1
 echo -e "
-## Checking DNS entries for $host"
+ + Checking DNS entries for $host"
 #host=$(hostname -f)
 forwardDNS=$(nslookup $host |  grep ^Name -A1 | awk '/^Address:/ {print $2}')
 if [[ ! -z $forwardDNS ]]
@@ -169,14 +169,13 @@ if [[ $upstream == "subscription.rhn.redhat.com" ]]
 then
    # Connected Satellite Server
    printOK "This system is registered to $upstream which indicates it is a Satellite server" 
-   TYPE="Sat6"
+   TYPE="Satellite"
 else
   # Satellite Capsule?
-  #printOK "This sytem is registered to $upstream which makes it a capsule server"
   if [[ $upstream == $hostname ]]
   then
     echo -e "This system is registered to itself ($hostname)"
-    TYPE="Sat6"
+    TYPE="Satellite"
   else
     TYPE="Capsule"
     echo "** This script only currently runs on Satellite servers not capsules.  A capsule version is currently being writted **"
@@ -209,6 +208,20 @@ do
   echo " - CPU$i : `mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' `"
   let i=$i+1
 done
+echo
+echo -e "
+####################
+## Checking umask ##
+####################"
+
+umask=$(umask)
+if [[ $umask -ne "0022" ]]
+then
+  printWarning "Umask is set to $umask which could cause problems with puppet module permissions.\n Recommend setting umask to 0022"
+  else
+  printOK "Umask is set to 00222"
+fi
+
 }
 
 
@@ -377,28 +390,30 @@ fi
 echo
 hammer --csv --csv-separator=" " location list | sort -n | grep -v "Id " > $TMPDIR/locations
 totalLocations=$(wc -l $TMPDIR/locations | awk '{print $1}')
-echo "# $totalLocations Locations found"
+echo " + $totalLocations Locations found"
 while read line
 do
   id=$(echo $line | awk '{print $1}')
   location=$(echo $line | awk '{print $2}')
-  hammer location info --id=${id} > $TMPDIR/location_${location}
-  echo " - Details for location \"${location}\" are in $TMPDIR/location_${location}"
+  hammer location --output csv info --id=${id} > $TMPDIR/location_${location}
+  totalSubnets=$(tr ',' '\n' < $TMPDIR/location_${location}  | grep -c Subnets)
+  echo "  + Details for location \"${location}\" are in $TMPDIR/location_${location}"
+  ## Add subnets
 done < $TMPDIR/locations
 
 ## Capsules
 echo 
 hammer --csv --csv-separator=" " capsule list| sort -n | grep -v "Id " > $TMPDIR/capsules
 totalCapsules=$(wc -l $TMPDIR/capsules | awk '{print $1}')
-echo "# $totalCapsules Capsule(s) found"
+echo " + $totalCapsules Capsule(s) found"
 while read line
 do
   id=$(echo $line | awk '{print $1}')
   name=$(echo $line | awk '{print $2}')
   fqdn=$(echo $line | awk '{print $3}' | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/")
   hammer capsule info --id=${id} > $TMPDIR/capsule_${name}  
-  echo " - Details for capsule \"${name}\" are in $TMPDIR/capsule_${name}"
-  echo -ne "\tFeatures: "
+  echo " + Details for capsule \"${name}\" are in $TMPDIR/capsule_${name}"
+  echo -ne " - Features: "
   awk '/Features: / {for (i=2; i<NF; i++) printf $i " "; print $NF}' $TMPDIR/capsule_${name} 
   checkDNS ${fqdn}
   echo -e " + Checking network connectivity between $(hostname) and ${fqdn}"
@@ -424,7 +439,7 @@ done < $TMPDIR/capsules
 
 ## Subnets
 echo
-echo "# Subnets"
+echo " + Subnets"
 hammer --csv --csv-separator=" " subnet list| sort -n | grep -v "Id " > $TMPDIR/subnets
 while read line
 do
