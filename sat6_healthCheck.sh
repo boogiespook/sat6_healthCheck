@@ -518,7 +518,7 @@ else
   echo
 fi
 
-if [[ ! -s $TMPDIR/remedialAction ]]
+if [[ -s $TMPDIR/remedialAction ]]
 then
   echo " + Remedial Action:"
   cat $TMPDIR/remedialAction
