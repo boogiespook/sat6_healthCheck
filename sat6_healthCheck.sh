@@ -194,7 +194,7 @@ echo -e "
  - Hostname         : $(hostname)
  - IP Address       : $(ip -4 -o a | grep -v "127.0.0" | awk '{print $4}')
  - Kernel Version   : $(uname -r)
- - Uptime           :$(uptime | sed 's/.*up \([^,]*\), .*/\1/')
+ - Uptime           : $(uptime | sed 's/.*up \([^,]*\), .*/\1/')
  - Last Reboot Time : $(who -b | awk '{print $3,$4}')
  - Red Hat Release  : $(cat /etc/redhat-release)"
 
