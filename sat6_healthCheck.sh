@@ -200,15 +200,15 @@ echo -e "
 
 cpus=$(lscpu | grep -e "^CPU(s):" | cut -f2 -d: | awk '{print $1}')
 i=0
-
 echo " + CPU: %usr"
 echo "   ---------"
 while [ $i -lt $cpus ]
 do
-  echo " - CPU${i} : $(mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' )"
+  echo " - CPU${i} : $(mpstat -P ALL | awk -v var=$i '{ if ($2 == var ) print $3 }' )"
   let i=${i}+1
 done
 echo
+
 echo -e "
 ####################
 ## Checking umask ##
