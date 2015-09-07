@@ -205,8 +205,8 @@ echo " + CPU: %usr"
 echo "   ---------"
 while [ $i -lt $cpus ]
 do
-  echo " - CPU$i : $(mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' )"
-  let i=$i+1
+  echo " - CPU${i} : $(mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' )"
+  let i=${i}+1
 done
 echo
 echo -e "
