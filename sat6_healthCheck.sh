@@ -198,14 +198,14 @@ echo -e "
  - Last Reboot Time : $(who -b | awk '{print $3,$4}')
  - Red Hat Release  : $(cat /etc/redhat-release)"
 
-cpus=`lscpu | grep -e "^CPU(s):" | cut -f2 -d: | awk '{print $1}'`
+cpus=$(lscpu | grep -e "^CPU(s):" | cut -f2 -d: | awk '{print $1}')
 i=0
 
 echo " + CPU: %usr"
 echo "   ---------"
 while [ $i -lt $cpus ]
 do
-  echo " - CPU$i : `mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' `"
+  echo " - CPU$i : $(mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' )"
   let i=$i+1
 done
 echo
