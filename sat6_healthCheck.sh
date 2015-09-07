@@ -219,7 +219,7 @@ if [[ $umask -ne "0022" ]]
 then
   printWarning "Umask is set to $umask which could cause problems with puppet module permissions.\n Recommend setting umask to 0022"
   else
-  printOK "Umask is set to 00222"
+  printOK "Umask is set to 0022"
 fi
 
 }
