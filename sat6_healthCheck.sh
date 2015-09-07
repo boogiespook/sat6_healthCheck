@@ -355,7 +355,7 @@ tcp dpt:53
 udp dpt:69
 udp dpt:53
 tcp dpt:5671
-tcp dpt:5674
+tcp dpt:5647
 EOF
 
 while read line 
