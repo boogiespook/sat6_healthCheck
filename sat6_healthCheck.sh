@@ -278,9 +278,19 @@ if (( $release >= 7 ))
 	 remedialAction "systemctl enable ${service}"
      fi
   else
-  ## TO DO
-  echo "Do the above for RHEL6 + iptables"
-     ## iptables
+     if pgrep ${service} > /dev/null
+     then
+        printOK "${service} is running"
+        if [[ ${service} == "ntpd" ]]
+        then
+           echo " + NTP Servers:"
+           awk '/^server/ {print $2}' /etc/ntp.conf
+        fi
+     else
+        printError "${service} is not running"
+     fi
+     if (chkconfig ${service} && echo "${service} enabled") || echo "${service} Not Enabled"
+     fi
 fi
 }
 
