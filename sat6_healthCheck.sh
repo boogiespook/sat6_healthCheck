@@ -194,21 +194,21 @@ echo -e "
  - Hostname         : $(hostname)
  - IP Address       : $(ip -4 -o a | grep -v "127.0.0" | awk '{print $4}')
  - Kernel Version   : $(uname -r)
- - Uptime           :$(uptime | sed 's/.*up \([^,]*\), .*/\1/')
+ - Uptime           : $(uptime | sed 's/.*up \([^,]*\), .*/\1/')
  - Last Reboot Time : $(who -b | awk '{print $3,$4}')
  - Red Hat Release  : $(cat /etc/redhat-release)"
 
-cpus=`lscpu | grep -e "^CPU(s):" | cut -f2 -d: | awk '{print $1}'`
+cpus=$(lscpu | grep -e "^CPU(s):" | cut -f2 -d: | awk '{print $1}')
 i=0
-
 echo " + CPU: %usr"
 echo "   ---------"
 while [ $i -lt $cpus ]
 do
-  echo " - CPU$i : `mpstat -P ALL | awk -v var=$i '{ if ($3 == var ) print $4 }' `"
-  let i=$i+1
+  echo " - CPU${i} : $(mpstat -P ALL | awk -v var=$i '{ if ($2 == var ) print $3 }' )"
+  let i=${i}+1
 done
 echo
+
 echo -e "
 ####################
 ## Checking umask ##
@@ -219,7 +219,7 @@ if [[ $umask -ne "0022" ]]
 then
   printWarning "Umask is set to $umask which could cause problems with puppet module permissions.\n Recommend setting umask to 0022"
   else
-  printOK "Umask is set to 00222"
+  printOK "Umask is set to 0022"
 fi
 
 }
@@ -370,7 +370,7 @@ tcp dpt:53
 udp dpt:69
 udp dpt:53
 tcp dpt:5671
-tcp dpt:5674
+tcp dpt:5647
 EOF
 
 while read line 
