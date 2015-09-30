@@ -289,7 +289,12 @@ if (( $release >= 7 ))
      else
         printError "${service} is not running"
      fi
-     if (chkconfig ${service} && echo "${service} enabled") || echo "${service} Not Enabled"
+     if [[ chkconfig ${service} && echo "${service} enabled"]]
+        then
+	  printOK "${service} is enabled"	
+        else
+	  printWarning "${service} is not enabled to start on boot"
+          remedialAction "service ${service} start "
      fi
 fi
 }
