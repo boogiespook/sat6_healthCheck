@@ -137,7 +137,7 @@ fi
 
 if [[ $host == $reverseDNS ]]
 then
-  printOK "Foreward and reverse DNS match"
+  printOK "Forward and reverse DNS match"
 else
   printError "Forward and reverse DNS do not match for $host / $reverseDNS"
 fi
