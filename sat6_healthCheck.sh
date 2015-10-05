@@ -289,7 +289,7 @@ if (( $release >= 7 ))
      else
         printError "${service} is not running"
      fi
-     if [[ chkconfig ${service} && echo "${service} enabled"]]
+     if $( chkconfig ${service} )
         then
 	  printOK "${service} is enabled"	
         else
