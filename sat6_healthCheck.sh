@@ -253,15 +253,19 @@ service=$1
 echo " - Checking status of ${service}"
 if (( $release >= 7 ))
   then
+     if [[ ${service} == "ntpd" ]]
+     then
+       return
+     fi
      ## Is it running?
      running=$(systemctl is-active ${service} 2> /dev/null)
      if [[ $running == "active" ]]
        then
 	  printOK "${service} is running"
-	  if [[ ${service} == "ntpd" ]]
+	  if [[ ${service} == "chronyd" ]]
 	  then
 	      echo " + NTP Servers:"
-	      awk '/^server/ {print $2}' /etc/ntp.conf
+	      awk '/^server/ {print $2}' /etc/chrony.conf
 	  fi
        else
  	  printError "${service} is not running"
@@ -490,7 +494,7 @@ echo -e "
 checkDNS $(hostname)
 checkSELinux
 checkOSupdates
-for service in firewalld ntpd 
+for service in firewalld ntpd chronyd
 do
   checkService ${service}
 done
