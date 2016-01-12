@@ -248,6 +248,19 @@ if [[ $selinux != "Enforcing" ]]
 fi
 }
 
+
+function checkChronySynchronised {
+
+if [ $(chronyc sources | grep \* | wc -l) -eq 0 ]
+then
+  printError "chronyd has no synchronised time source"
+  remedialAction "wait for chrony to synchronise and check with 'chronyc sources list'"
+else
+  printOK "chronyd is synchronised with a time server"
+fi
+}
+
+
 function checkService {
 service=$1
 echo " - Checking status of ${service}"
@@ -266,6 +279,7 @@ if (( $release >= 7 ))
 	  then
 	      echo " + NTP Servers:"
 	      awk '/^server/ {print $2}' /etc/chrony.conf
+	      checkChronySynchronised
 	  fi
        else
  	  printError "${service} is not running"
