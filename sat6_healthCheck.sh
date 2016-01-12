@@ -78,7 +78,29 @@ echo << EOF >> /root/.hammer/cli_config.yml
        :password: 'password'
 
 EOF"
-exit 2
+    echo -n "Would you like me to create this file ? [y|n] :"
+    read yesno
+    if [ ${yesno} == 'y' ]
+    then
+        echo -n "Please enter your admin username : "
+        read username
+        echo -n "Please enter your admin password : "
+        read password
+
+        mkdir ~/.hammer
+        chmod 600 ~/.hammer
+        echo << EOF >> /root/.hammer/cli_config.yml
+  :foreman:
+       :host: 'https://$(hostname -f)'
+       :username: '${username}'
+       :password: '${password}'
+
+EOF
+        echo "/root/.hammer/cli_config.yml has been created"
+        else
+            exit 2
+        fi
+
 fi
 
 TMPDIR="/tmp/sat6_check"
