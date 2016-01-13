@@ -78,7 +78,29 @@ echo << EOF >> /root/.hammer/cli_config.yml
        :password: 'password'
 
 EOF"
-exit 2
+    echo -n "Would you like me to create this file ? [y|n] :"
+    read yesno
+    if [ ${yesno} == 'y' ]
+    then
+        echo -n "Please enter your admin username : "
+        read username
+        echo -n "Please enter your admin password : "
+        read password
+
+        mkdir ~/.hammer
+        chmod 600 ~/.hammer
+        echo << EOF >> /root/.hammer/cli_config.yml
+  :foreman:
+       :host: 'https://$(hostname -f)'
+       :username: '${username}'
+       :password: '${password}'
+
+EOF
+        echo "/root/.hammer/cli_config.yml has been created"
+        else
+            exit 2
+        fi
+
 fi
 
 TMPDIR="/tmp/sat6_check"
@@ -248,6 +270,43 @@ if [[ $selinux != "Enforcing" ]]
 fi
 }
 
+
+function checkChronySynchronised {
+
+if [ $(chronyc sources | grep \* | wc -l) -eq 0 ]
+then
+  printError "chronyd has no synchronised time source"
+  remedialAction "wait for chrony to synchronise and check with 'chronyc sources list'"
+else
+  printOK "chronyd is synchronised with a time server"
+fi
+}
+
+function checkFirewalldXML {
+    ## Check the firewalld xml profile, suggest and offer to fix it.
+    FIREWALLD_XML="/usr/lib/firewalld/services/RH-Satellite-6.xml"
+    FIREWALL_REGEX="\"80|443|564[67]|5671|8140|8080|9090|67|68|53|69|53|5647\""
+    EXPECTED_PORTCOUNT=13
+    if [ $(egrep ${FIREWALL_REGEX} ${FIREWALLD_XML} | wc -l) -lt ${EXPECTED_PORTCOUNT} ]
+    then
+        printError "Incorrect firewalld manifest detected"
+        echo -n "Would you like me to correct it ? [y|N] : "
+        read yesno
+        if [ $yesno == 'y' ]
+        then
+            echo "Correcting firewalld profile and reloading"
+            fixFirewalldProfile
+            firewall-cmd --add-service=RH-Satellite-6 --permanent
+            firewall-cmd --reload
+        else
+            printWarning "Leaving the firewalld profile as is as is"
+        fi
+    else
+        printOK "firewalld xml profile looks ok"
+    fi
+
+}
+
 function checkService {
 service=$1
 echo " - Checking status of ${service}"
@@ -262,15 +321,23 @@ if (( $release >= 7 ))
      if [[ $running == "active" ]]
        then
 	  printOK "${service} is running"
+
 	  if [[ ${service} == "chronyd" ]]
 	  then
 	      echo " + NTP Servers:"
 	      awk '/^server/ {print $2}' /etc/chrony.conf
+	      checkChronySynchronised
 	  fi
        else
  	  printError "${service} is not running"
  	  remedialAction "systemctl start ${service}"
      fi
+
+     if [[ ${service} == "firewalld" ]]
+	  then
+	    checkFirewalldXML
+	  fi
+
      
      ## Is it enabled?
      enabled=$(systemctl is-enabled ${service} 2> /dev/null)
@@ -315,6 +382,30 @@ if (( $(wc -l $TMPDIR/updates | awk '{print $1}') > 2 ))
 fi
 }
 
+function fixFirewalldProfile {
+## Fix the broken firewalld profile shipped
+cat << EOF > /usr/lib/firewalld/services/RH-Satellite-6.xml
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Red Hat Satellite 6</short>
+  <description>Red Hat Satellite 6 is a systems management server that can be used to configure new systems, subscribe to updates, and maintain installations in distributed environments.</description>
+  <port protocol="tcp" port="80"/>
+  <port protocol="tcp" port="443"/>
+  <port protocol="tcp" port="5646-5647"/>
+  <port protocol="tcp" port="5671"/>
+  <port protocol="tcp" port="8140"/>
+  <port protocol="tcp" port="8080"/>
+  <port protocol="tcp" port="9090"/>
+  <port protocol="udp" port="67"/>
+  <port protocol="udp" port="68"/>
+  <port protocol="tcp" port="53"/>
+  <port protocol="udp" port="69"/>
+  <port protocol="udp" port="53"/>
+  <port protocol="tcp" port="5647"/>
+</service>
+EOF
+
+}
 function checkDisks {
 echo -e "
 ############################
