@@ -62,6 +62,10 @@ function printError {
   echo -e "${RED}[ERROR] $ERRORS\t $1 ${RESET}" | tee -a $TMPDIR/errors
 }
 
+function remedialAction {
+  echo -e "$1" | tee -a $TMPDIR/remedialAction
+}
+
 ## Test run setup / teardown functions
 
 function clean_temp_directory {
