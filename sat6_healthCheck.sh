@@ -87,6 +87,25 @@ function am_I_root {
   fi
 }
 
+function check_hiera_symlink {
+  if [ $(rpm -q hiera | wc -l) -gt 0 ]
+    then 
+    echo -e "hiera has been installed"
+    if [ ! -L /etc/puppet/hiera.yaml ]
+      then 
+      printWarning "Missing hiera symlink from /etc/hiera.yaml -> /etc/puppet/hiera.yaml"
+      echo -n "Would you like me to create it ? [y|N]:"
+      read yesno
+      if [ ${yesno} == 'y' ]
+      then
+      ln -s /etc/hiera.yaml /etc/puppet/hiera.yaml 
+      fi 
+    else
+      printOK "Hiera symlink exists"
+    fi
+  fi  
+}
+
 
 function check_hammer_config_file {
     if [[ ! -f /root/.hammer/cli_config.yml ]]
@@ -628,6 +647,7 @@ checkDisks
 checkNetworkConnection
 getType
 checkSubscriptions
+check_hiera_symlink
 
 echo -e "
 #######################
