@@ -176,7 +176,8 @@ function check_admin_tools {
     then
     while true; do
         echo "Certain utilities are required for running this script: $toInstall"
-		read -p "OK to install? (y/n) : " yn
+        echo "After this script has run you may uninstall them if they are no longer needed."
+        read -p "OK to install? (y/n) : " yn
         case $yn in
             [Yy]* ) yum -y install $toInstall; break;;
             [Nn]* ) echo " OK - health check stopped"; exit;;
