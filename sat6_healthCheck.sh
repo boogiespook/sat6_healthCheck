@@ -175,7 +175,8 @@ function check_admin_tools {
     if [[ $toInstall != "" ]]
     then
     while true; do
-        read -p "Certain utilities are required.  Ok to install $toInstall ?  (y/n) : " yn
+        echo "Certain utilities are required for running this script: $toInstall"
+		read -p "OK to install? (y/n) : " yn
         case $yn in
             [Yy]* ) yum -y install $toInstall; break;;
             [Nn]* ) echo " OK - health check stopped"; exit;;
