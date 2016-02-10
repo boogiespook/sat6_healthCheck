@@ -110,17 +110,7 @@ function check_hiera_symlink {
 function check_hammer_config_file {
     if [[ ! -f /root/.hammer/cli_config.yml ]]
     then
-        echo -e "A hammer config file has not been created.  This is used to interogate foreman.
-    Please do the following:
-    mkdir ~/.hammer
-    chmod 600 ~/.hammer
-    echo << EOF >> /root/.hammer/cli_config.yml
-      :foreman:
-           :host: 'https://$(hostname -f)'
-           :username: 'admin'
-           :password: 'password'
-
-    EOF"
+        echo -e "A hammer config file has not been created.  This is used to interogate foreman."
         echo -n "Would you like me to create this file ? [y|n] :"
         read yesno
         if [ ${yesno} == 'y' ]
@@ -130,8 +120,8 @@ function check_hammer_config_file {
             echo -n "Please enter your admin password : "
             read -s password
 
-            mkdir ~/.hammer
-            chmod 600 ~/.hammer
+            mkdir /root/.hammer
+            chmod 600 /root/.hammer
 cat << EOF > /root/.hammer/cli_config.yml
 :foreman:
      :host: 'https://$(hostname -f)'
@@ -139,11 +129,20 @@ cat << EOF > /root/.hammer/cli_config.yml
      :password: '${password}'
 
 EOF
-            echo "/root/.hammer/cli_config.yml has been created"
-            else
-                exit 2
-            fi
+        echo "/root/.hammer/cli_config.yml has been created"
+    else
+        echo -e "Please do the following:
+    mkdir /root/.hammer
+    chmod 600 /root/.hammer
+    echo << EOF >> /root/.hammer/cli_config.yml
+      :foreman:
+           :host: 'https://$(hostname -f)'
+           :username: 'admin'
+           :password: 'password'
 
+    EOF"
+        exit 2
+        fi
     fi
 
 }
@@ -718,4 +717,4 @@ exit
 
 
 
-
+# *** vim: set ts=2 et ai: ***
