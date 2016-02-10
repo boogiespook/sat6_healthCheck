@@ -128,7 +128,7 @@ function check_hammer_config_file {
             echo -n "Please enter your admin username : "
             read username
             echo -n "Please enter your admin password : "
-            read password
+            read -s password
 
             mkdir ~/.hammer
             chmod 600 ~/.hammer
