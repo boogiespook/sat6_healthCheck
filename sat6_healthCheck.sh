@@ -528,7 +528,7 @@ EOF
           then
         printOK "$port ($proto) has been opened"
           else
-        printError "$port ($proto) has been NOT been opened"
+        printError "$port ($proto) has NOT been opened"
         fi
       done < $TMPDIR/iptables_required
     fi
